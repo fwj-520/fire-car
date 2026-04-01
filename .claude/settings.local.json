@@ -4,7 +4,20 @@
       "Bash(git init:*)",
       "Bash(git config:*)",
       "Bash(git add:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(git commit:*)",
+      "Bash(git remote:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(ssh-keygen -t ed25519 -C \"fwj-520@github.com\" -f ~/.ssh/github_key -q -N \"\")",
+      "Bash(ssh-keygen -R github.com)",
+      "Bash(ssh-keyscan -H github.com)",
+      "Bash(ssh -T git@github.com)",
+      "Bash(mkdir -p ~/.ssh)",
+      "Bash(touch ~/.ssh/known_hosts)",
+      "Bash(chmod 644 ~/.ssh/known_hosts)",
+      "Bash(ping -c 3 github.com)",
+      "Bash(git pull:*)"
     ]
   }
 }
