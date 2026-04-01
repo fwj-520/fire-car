@@ -1,0 +1,25 @@
+# ROS2 build files
+build/
+install/
+log/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# RAR files
+*.rar
+
+# Python cache
+__pycache__/
+*.pyc
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+
+# Colcon
+COLCON_IGNORE
+colcon_build.rc

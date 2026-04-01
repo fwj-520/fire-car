@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: mlx90614_driver
+Version: 0.0.0
+Summary: MLX90614 Infrared Temperature Sensor ROS 2 Driver
+Maintainer: 44577
+Maintainer-email: 44577@qq.com
+License: Apache License 2.0
+Requires-Dist: setuptools
+Requires-Dist: smbus2
+Dynamic: license
+Dynamic: maintainer
+Dynamic: maintainer-email
+Dynamic: requires-dist
+Dynamic: summary

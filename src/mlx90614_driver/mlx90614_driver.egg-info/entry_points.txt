@@ -1,0 +1,2 @@
+[console_scripts]
+mlx90614_node = mlx90614_driver.mlx90614_node:main

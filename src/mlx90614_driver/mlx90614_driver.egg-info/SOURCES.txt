@@ -1,0 +1,12 @@
+package.xml
+setup.py
+mlx90614_driver/__init__.py
+mlx90614_driver/mlx90614_node.py
+mlx90614_driver.egg-info/PKG-INFO
+mlx90614_driver.egg-info/SOURCES.txt
+mlx90614_driver.egg-info/dependency_links.txt
+mlx90614_driver.egg-info/entry_points.txt
+mlx90614_driver.egg-info/requires.txt
+mlx90614_driver.egg-info/top_level.txt
+mlx90614_driver.egg-info/zip-safe
+resource/mlx90614_driver

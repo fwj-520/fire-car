@@ -1,0 +1,4 @@
+hiwonder_motor_driver:
+  ros__parameters:
+    serial_port: "/dev/ttyUSB1"
+    baudrate: 115200
