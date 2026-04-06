@@ -85,7 +85,7 @@ def kill_processes():
 
     # 使用系统命令清理残留进程（快速尝试）
     try:
-        targets = ['ydlidar_ros2_driver_node', 'slam_gmapping', 'simple_odom', 'simple_avoidance', 'rviz2', 'rf2o_laser_odometry', 'mlx90614_node', 'temperature_marker', 'hiwonder_motor_driver']
+        targets = ['ydlidar_ros2_driver_node', 'slam_gmapping', 'simple_odom', 'simple_avoidance', 'rviz2', 'rf2o_laser_odometry', 'hiwonder_motor_driver']
         for target in targets:
             for i in range(2):  # 减少到2次尝试
                 subprocess.run(f"pkill -f '{target}' 2>/dev/null", shell=True)
@@ -189,20 +189,9 @@ def main():
     run_command("ros2 run yahboomcar_avoidance simple_avoidance", "避障节点")
     time.sleep(2)
 
-    # 6. MLX90614 温度传感器驱动
-    run_command("ros2 run mlx90614_driver mlx90614_node --ros-args -p serial_port:=/dev/ttyUSB2", "温度传感器")
-    time.sleep(2)
-
-    # 7. 温度数据集成节点（着火点检测和标记）
-    run_command("ros2 run yahboomcar_mapping temperature_marker", "温度集成节点")
-    time.sleep(2)
-
-    # 8. GMapping 建图节点（使用官方launch文件）
+    # 6. GMapping 建图节点（使用官方launch文件）
     run_command("ros2 launch slam_gmapping slam_gmapping_launch.py", "GMapping 建图")
     time.sleep(3)
-
-    # 10. 键盘控制
-    run_command("ros2 run teleop_twist_keyboard teleop_twist_keyboard", "键盘控制")
 
     # 11. RViz 可视化（使用 slam_gmapping 包中的配置）
     run_command("ros2 run rviz2 rviz2 -d " + os.path.abspath("src/slam_gmapping/rviz/map_view.rviz"), "RViz", use_setsid=False)
