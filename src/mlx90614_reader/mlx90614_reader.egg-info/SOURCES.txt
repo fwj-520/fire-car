@@ -1,0 +1,16 @@
+package.xml
+setup.cfg
+setup.py
+mlx90614_reader/__init__.py
+mlx90614_reader/mlx90614_reader.py
+mlx90614_reader.egg-info/PKG-INFO
+mlx90614_reader.egg-info/SOURCES.txt
+mlx90614_reader.egg-info/dependency_links.txt
+mlx90614_reader.egg-info/entry_points.txt
+mlx90614_reader.egg-info/requires.txt
+mlx90614_reader.egg-info/top_level.txt
+mlx90614_reader.egg-info/zip-safe
+resource/mlx90614_reader
+test/test_copyright.py
+test/test_flake8.py
+test/test_pep257.py
