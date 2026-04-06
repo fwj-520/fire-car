@@ -58,7 +58,8 @@
       "Bash(ros2 launch:*)",
       "Bash(git restore:*)",
       "Bash(rm -f frames*.gv frames*.pdf)",
-      "Bash(ros2 tf:*)"
+      "Bash(ros2 tf:*)",
+      "Bash(kill:*)"
     ]
   }
 }

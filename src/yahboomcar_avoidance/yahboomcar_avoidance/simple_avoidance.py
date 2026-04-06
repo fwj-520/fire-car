@@ -7,6 +7,7 @@ from rclpy.qos import QoSProfile, QoSReliabilityPolicy
 import math
 import signal
 import sys
+import time
 
 class SimpleAvoidance(Node):
     def __init__(self):
@@ -112,57 +113,27 @@ class SimpleAvoidance(Node):
         left_dist = get_min_distance(left_start, left_end)
         right_dist = get_min_distance(right_start, right_end)
 
-        # 决策逻辑 - 优化转向行为
+        # 决策逻辑 - 优化避障行为：后退一段距离后原地转弯
         cmd = Twist()
 
-        if front_dist < self.danger_distance:
-            cmd.linear.x = self.back_speed
-            if left_dist > right_dist:
-                # 左侧安全，通过速度差实现左转偏转（右侧稍快）
-                cmd.angular.z = 0.3  # 增加转向速度
+        if front_dist < self.danger_distance:  # 危险距离
+            if not self.is_turning:  # 第一次遇到危险，先后退
+                cmd.linear.x = self.back_speed
                 self.is_turning = True
-                self.turn_direction = 1
-                self.get_logger().info(f'🔥 后退+左偏 (前:{front_dist:.2f}m)')
+                self.back_time = time.time()
+                self.get_logger().info(f'🔥 开始后退 (前:{front_dist:.2f}m)')
             else:
-                # 右侧安全，通过速度差实现右转偏转（左侧稍快）
-                cmd.angular.z = -0.3  # 增加转向速度
-                self.is_turning = True
-                self.turn_direction = -1
-                self.get_logger().info(f'🔥 后退+右偏 (前:{front_dist:.2f}m)')
+                # 后退一段时间后，原地转弯
+                if time.time() - self.back_time < 0.8:  # 后退0.8秒
+                    cmd.linear.x = self.back_speed
+                    self.get_logger().info(f'🔥 继续后退 (前:{front_dist:.2f}m)')
+                else:  # 原地转弯（双轮配合，更明显的转向）
+                    cmd.angular.z = 0.8 if left_dist > right_dist else -0.8  # 提高角速度，让转弯更明显
+                    cmd.linear.x = 0.05  # 添加小的前进速度，让转向更流畅
+                    self.get_logger().info(f'🔄 原地转弯 (前:{front_dist:.2f}m, 方向:{1 if left_dist>right_dist else -1})')
 
-        elif front_dist < self.safe_distance:
-            if self.is_turning:
-                if self.turn_direction == 1:
-                    if left_dist > self.clear_distance:
-                        self.is_turning = False
-                        cmd.linear.x = self.max_speed
-                        self.get_logger().info(f'✅ 左偏完成 (左:{left_dist:.2f}m)')
-                    else:
-                        cmd.angular.z = 0.3  # 增加转向速度
-                        self.get_logger().info(f'🔄 继续左偏 (左:{left_dist:.2f}m)')
-                else:
-                    if right_dist > self.clear_distance:
-                        self.is_turning = False
-                        cmd.linear.x = self.max_speed
-                        self.get_logger().info(f'✅ 右偏完成 (右:{right_dist:.2f}m)')
-                    else:
-                        cmd.angular.z = -0.3  # 增加转向速度
-                        self.get_logger().info(f'🔄 继续右偏 (右:{right_dist:.2f}m)')
-            else:
-                if left_dist > right_dist:
-                    cmd.angular.z = 0.3  # 增加转向速度
-                    self.is_turning = True
-                    self.turn_direction = 1
-                    self.get_logger().info(f'⚠️ 左偏 (前:{front_dist:.2f}m 左:{left_dist:.2f}m)')
-                else:
-                    cmd.angular.z = -0.3  # 增加转向速度
-                    self.is_turning = True
-                    self.turn_direction = -1
-                    self.get_logger().info(f'⚠️ 右偏 (前:{front_dist:.2f}m 右:{right_dist:.2f}m)')
-
-        else:
+        else:  # 安全距离，直行
             self.is_turning = False
-            # 速度随距离变化，但不超过最大值
             if front_dist < self.safe_distance + 0.3:
                 cmd.linear.x = 0.45  # 最低速度（满足硬件要求）
             else:

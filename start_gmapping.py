@@ -40,87 +40,58 @@ def send_stop_command():
     print("[OK] 小车已停止")
 
 def kill_processes():
-    """杀死所有子进程及它们的子进程 - 先强制停止电机驱动节点，再关闭其他进程"""
-    # 注意：不在这里调用 send_stop_command，避免重复发送停止命令
-
-    # 先强制停止电机驱动节点
+    """杀死所有子进程及它们的子进程 - 确保彻底清理所有进程"""
+    # 先强制停止所有 ROS2 相关进程（使用系统命令）
     try:
-        print("[Car] 强制停止电机驱动节点...")
-        subprocess.run("pkill -f 'hiwonder_motor_driver' 2>/dev/null", shell=True)
-        time.sleep(0.5)
+        targets = ['ydlidar_ros2_driver_node', 'slam_gmapping', 'simple_odom', 'simple_avoidance', 'rviz2', 'rf2o_laser_odometry', 'hiwonder_motor_driver', 'mlx90614_node', 'temperature_marker']
+        for target in targets:
+            for i in range(3):  # 增加尝试次数
+                subprocess.run(f"pkill -f '{target}' 2>/dev/null", shell=True)
+                subprocess.run(f"pkill -9 -f '{target}' 2>/dev/null", shell=True)  # 强制杀死
+                time.sleep(0.2)  # 稍长的等待时间
     except Exception as e:
-        print(f"[Warn] 停止电机节点失败: {e}")
+        print(f"[Warn] 清理系统进程失败: {e}")
 
-    # 然后快速杀死其他进程
+    # 然后杀死所有子进程
     for i, p in enumerate(processes):
         if p and p.poll() is None:
             try:
-                # 先尝试发送终止信号
+                # 对于使用 setsid 的进程，发送信号到进程组
                 if i < len(process_groups) and process_groups[i] != 0:
-                    # 对于使用 setsid 的进程，发送信号到进程组
-                    os.killpg(process_groups[i], signal.SIGTERM)
                     try:
-                        # 减少等待超时时间
-                        p.wait(timeout=0.5)
-                    except subprocess.TimeoutExpired:
-                        # 如果超时，强制杀死
                         os.killpg(process_groups[i], signal.SIGKILL)
                         try:
-                            p.wait(timeout=0.2)
+                            p.wait(timeout=0.3)
                         except:
                             pass
+                    except:
+                        pass
                 else:
-                    # 对于没有使用 setsid 的进程，直接发送信号
-                    p.terminate()
                     try:
-                        p.wait(timeout=0.5)
-                    except subprocess.TimeoutExpired:
                         p.kill()
                         try:
-                            p.wait(timeout=0.2)
+                            p.wait(timeout=0.3)
                         except:
                             pass
+                    except:
+                        pass
             except Exception as e:
                 print(f"[Warn] 杀死进程失败: {e}")
 
-    # 使用系统命令清理残留进程（快速尝试）
+    # 最终清理所有残留进程
     try:
-        targets = ['ydlidar_ros2_driver_node', 'slam_gmapping', 'simple_odom', 'simple_avoidance', 'rviz2', 'rf2o_laser_odometry', 'hiwonder_motor_driver']
-        for target in targets:
-            for i in range(2):  # 减少到2次尝试
-                subprocess.run(f"pkill -f '{target}' 2>/dev/null", shell=True)
-                time.sleep(0.1)  # 减少等待时间
-        print("[OK] 所有进程已清理")
+        subprocess.run("pkill -9 -f 'ros2' 2>/dev/null", shell=True)
+        subprocess.run("pkill -9 -f 'ydlidar' 2>/dev/null", shell=True)
+        subprocess.run("pkill -9 -f 'stm32' 2>/dev/null", shell=True)
+        time.sleep(0.5)
+        print("[OK] 所有进程已彻底清理")
     except Exception as e:
-        print(f"[Warn] 清理残留进程失败: {e}")
+        print(f"[Warn] 最终清理残留进程失败: {e}")
 
 def signal_handler(sig, frame):
     print("\n[Stop] 正在停止小车...")
-    # 首先向控制器下达停止指令
-    try:
-        print("[Car] 向控制器发送停止指令...")
-        # 使用 ros2 topic pub 命令直接发送停止指令
-        stop_cmd = "ros2 topic pub -1 /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}' --no-daemon 2>/dev/null"
-        subprocess.run(stop_cmd, shell=True, timeout=0.3)
-        print("[OK] 停止指令已发送到控制器")
-
-        # 等待控制器处理停止指令
-        time.sleep(1.0)
-
-    except Exception as e:
-        print(f"[Warn] 发送停止指令失败: {e}")
-
-    # 然后停止小车（强制停止电机驱动节点）
-    try:
-        print("[Car] 强制停止电机驱动节点...")
-        subprocess.run("pkill -f 'hiwonder_motor_driver' 2>/dev/null", shell=True)
-        time.sleep(0.5)
-        print("[OK] 电机驱动节点已停止")
-    except Exception as e:
-        print(f"[Warn] 停止电机节点失败: {e}")
-
-    # 立即停止其他进程
-    print("[Stop] 正在关闭其他节点...")
+    # 立即停止所有进程，不等待停止指令处理
+    print("[Stop] 立即停止所有节点...")
     kill_processes()
 
     print("[Stop] 所有节点已关闭")
