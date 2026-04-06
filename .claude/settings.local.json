@@ -59,7 +59,11 @@
       "Bash(git restore:*)",
       "Bash(rm -f frames*.gv frames*.pdf)",
       "Bash(ros2 tf:*)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "Bash(strace -o /tmp/mlx90614_strace.log -e trace=file python3 /home/gwm/yahboomcar_ws/install/mlx90614_reader/lib/mlx90614_reader/mlx90614_reader)",
+      "Read(//tmp/**)",
+      "Bash(ulimit:*)",
+      "Bash(ros2 pkg:*)"
     ]
   }
 }

@@ -1,7 +1,8 @@
 
 """MLX90614 传感器数据读取模块"""
-from .mlx90614_reader import read_mlx90614_data
+from .mlx90614_reader import Mlx90614ReaderNode
 from .mlx90614_reader import parse_serial_data
+from .mlx90614_reader import main
 
 __version__ = '1.0.0'
-__all__ = ['read_mlx90614_data', 'parse_serial_data']
+__all__ = ['Mlx90614ReaderNode', 'parse_serial_data', 'main']

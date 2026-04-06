@@ -1,5 +1,0 @@
-mlx90614_node:
-  ros__parameters:
-    serial_port: "/dev/ttyUSB2"
-    baudrate: 115200
-    publish_rate: 50.0
