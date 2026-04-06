@@ -63,8 +63,7 @@ class Mlx90614ReaderNode(Node):
 
             # 创建定时器，定期读取数据
             self.timer = self.create_timer(0.05, self.read_mlx90614_data)
-            # 创建定时器，5秒后停止
-            self.stop_timer = self.create_timer(5.0, self.stop_node)
+            # 不设置定时器，让节点一直运行
         except Exception as e:
             self.get_logger().error(f"无法打开串口: {e}")
             rclpy.shutdown()
@@ -89,11 +88,6 @@ class Mlx90614ReaderNode(Node):
             self.get_logger().error(f"读取或解析数据时出错: {e}")
             time.sleep(1)
 
-    def stop_node(self):
-        self.get_logger().info("节点运行时间已到，正在停止...")
-        self.destroy_timer(self.timer)
-        self.destroy_timer(self.stop_timer)
-        rclpy.shutdown()
 
     def __del__(self):
         if hasattr(self, 'ser') and self.ser.is_open:
