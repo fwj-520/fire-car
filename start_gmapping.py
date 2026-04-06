@@ -169,7 +169,11 @@ def main():
     run_command("ros2 launch ydlidar_ros2_driver ydlidar_launch.py", "激光雷达")
     time.sleep(3)
 
-    # 2. 静态TF：base_link -> laser_frame（正常安装）
+    # 2. 静态TF：base_footprint -> base_link
+    run_command("ros2 run tf2_ros static_transform_publisher 0 0 0 0 0 0 base_footprint base_link", "base_footprint -> base_link TF")
+    time.sleep(1)
+
+    # 3. 静态TF：base_link -> laser_frame（正常安装）
     run_command("ros2 run tf2_ros static_transform_publisher 0.07 0.0075 0.024 0 0 0 base_link laser_frame", "雷达TF")
     time.sleep(1)
 
