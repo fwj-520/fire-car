@@ -43,7 +43,7 @@ def kill_processes():
     """杀死所有子进程及它们的子进程 - 确保彻底清理所有进程"""
     # 先强制停止所有 ROS2 相关进程（使用系统命令）
     try:
-        targets = ['ydlidar_ros2_driver_node', 'slam_gmapping', 'simple_odom', 'simple_avoidance', 'rviz2', 'rf2o_laser_odometry', 'hiwonder_motor_driver', 'mlx90614_node', 'temperature_marker']
+        targets = ['ydlidar_ros2_driver_node', 'slam_gmapping', 'simple_odom', 'simple_avoidance', 'rviz2', 'rf2o_laser_odometry', 'hiwonder_motor_driver', 'mlx90614_reader', 'temperature_marker']
         for target in targets:
             for i in range(3):  # 增加尝试次数
                 subprocess.run(f"pkill -f '{target}' 2>/dev/null", shell=True)
@@ -134,6 +134,8 @@ def main():
     subprocess.run("pkill -f 'simple_avoidance' 2>/dev/null", shell=True)
     subprocess.run("pkill -f 'rviz2' 2>/dev/null", shell=True)
     subprocess.run("pkill -f 'rf2o_laser_odometry' 2>/dev/null", shell=True)
+    subprocess.run("pkill -f 'mlx90614_reader' 2>/dev/null", shell=True)
+    subprocess.run("pkill -f 'temperature_marker' 2>/dev/null", shell=True)
     time.sleep(1)
 
     # 1. 激光雷达（使用手持建图方法）
@@ -163,6 +165,14 @@ def main():
     # 6. GMapping 建图节点（使用官方launch文件）
     run_command("ros2 launch slam_gmapping slam_gmapping_launch.py", "GMapping 建图")
     time.sleep(3)
+
+    # 7. 温度传感器节点
+    run_command("ros2 run mlx90614_reader mlx90614_reader", "温度传感器")
+    time.sleep(2)
+
+    # 8. 温度可视化标记节点
+    run_command("ros2 run yahboomcar_mapping temperature_marker", "温度标记")
+    time.sleep(2)
 
     # 11. RViz 可视化（使用 slam_gmapping 包中的配置）
     run_command("ros2 run rviz2 rviz2 -d " + os.path.abspath("src/slam_gmapping/rviz/map_view.rviz"), "RViz", use_setsid=False)

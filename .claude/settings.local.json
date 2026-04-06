@@ -63,7 +63,13 @@
       "Bash(strace -o /tmp/mlx90614_strace.log -e trace=file python3 /home/gwm/yahboomcar_ws/install/mlx90614_reader/lib/mlx90614_reader/mlx90614_reader)",
       "Read(//tmp/**)",
       "Bash(ulimit:*)",
-      "Bash(ros2 pkg:*)"
+      "Bash(ros2 pkg:*)",
+      "Bash(netstat:*)",
+      "Bash(curl:*)",
+      "Bash(mv /home/gwm/.claude/tasks/f11042a2-8790-425a-a65c-e537aa99a0d3/1.json.tmp /home/gwm/.claude/tasks/f11042a2-8790-425a-a65c-e537aa99a0d3/1.json)",
+      "Bash(task_manager list:*)",
+      "Bash(ps -aux)",
+      "Bash(strace:*)"
     ]
   }
 }
