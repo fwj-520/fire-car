@@ -4,9 +4,10 @@ from rclpy.node import Node
 import serial
 import time
 import re
+from std_msgs.msg import Float32MultiArray
 
-# 串口配置
-SERIAL_PORT = '/dev/ttyUSB2'  # 修改为实际使用的串口
+# 串口配置 - 根据实际设备修改
+SERIAL_PORT = '/dev/ttyUSB2'  # 温度传感器实际串口（指定的设备）
 BAUD_RATE = 115200
 
 # 温度范围配置
@@ -21,7 +22,6 @@ def is_data_valid(ambient, object_temp, diff):
     """判断数据是否有效"""
     if not (is_temp_valid(ambient) and is_temp_valid(object_temp)):
         return False
-    # 取消温度差限制，只检查温度范围
     return True
 
 def parse_serial_data(data):
@@ -42,7 +42,6 @@ def parse_serial_data(data):
                 object_temp = float(match.group(3))
                 diff = float(match.group(4))
 
-                # 检查数据有效性
                 if is_data_valid(ambient, object_temp, diff):
                     if side == 'Left':
                         left_ambient = ambient
@@ -57,13 +56,16 @@ class Mlx90614ReaderNode(Node):
     def __init__(self):
         super().__init__('mlx90614_reader')
         self.get_logger().info(f"尝试连接到串口 {SERIAL_PORT} ...")
+
+        # 创建话题发布者
+        self.temp_publisher = self.create_publisher(Float32MultiArray, '/mlx90614/temperature_array', 10)
+
         try:
-            self.ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
+            self.ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1, write_timeout=1)
             self.get_logger().info(f"成功连接到串口 {SERIAL_PORT}")
 
-            # 创建定时器，定期读取数据
-            self.timer = self.create_timer(0.05, self.read_mlx90614_data)
-            # 不设置定时器，让节点一直运行
+            # 创建定时器，降低频率以避免IO错误
+            self.timer = self.create_timer(0.5, self.read_mlx90614_data)
         except Exception as e:
             self.get_logger().error(f"无法打开串口: {e}")
             rclpy.shutdown()
@@ -74,19 +76,40 @@ class Mlx90614ReaderNode(Node):
                 data = self.ser.read(self.ser.in_waiting).decode('utf-8', errors='ignore')
                 left_ambient, left_object, right_ambient, right_object = parse_serial_data(data)
 
-                # 显示数据
+                # 发布温度数据话题 - 仅在解析到有效数据时发布
                 if left_ambient is not None or right_ambient is not None:
-                    self.get_logger().info("\n=== MLX90614 传感器数据 ===")
+                    temp_msg = Float32MultiArray()
+                    temp_msg.data = [
+                        left_ambient if left_ambient is not None else -999.0,
+                        left_object if left_object is not None else -999.0,
+                        right_ambient if right_ambient is not None else -999.0,
+                        right_object if right_object is not None else -999.0
+                    ]
+                    self.temp_publisher.publish(temp_msg)
 
+                    # 显示数据
+                    self.get_logger().info("\n=== MLX90614 传感器数据 ===")
                     if left_ambient is not None and left_object is not None:
                         self.get_logger().info(f"左传感器: 环境温度: {left_ambient:.2f} °C, 物体温度: {left_object:.2f} °C")
-
                     if right_ambient is not None and right_object is not None:
                         self.get_logger().info(f"右传感器: 环境温度: {right_ambient:.2f} °C, 物体温度: {right_object:.2f} °C")
 
         except Exception as e:
-            self.get_logger().error(f"读取或解析数据时出错: {e}")
-            time.sleep(1)
+            # 更健壮的错误处理，尝试重新连接
+            self.get_logger().warn(f"读取数据失败: {e}")
+            self.reconnect_serial()
+
+    def reconnect_serial(self):
+        """尝试重新连接串口"""
+        try:
+            if hasattr(self, 'ser') and self.ser.is_open:
+                self.ser.close()
+            # 尝试重新连接
+            self.ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
+            self.get_logger().info(f"成功重新连接到串口 {SERIAL_PORT}")
+        except Exception as e:
+            self.get_logger().error(f"无法重新连接串口: {e}")
+            time.sleep(1.0)
 
 
     def __del__(self):

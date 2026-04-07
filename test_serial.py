@@ -2,7 +2,7 @@
 import serial
 import time
 
-SERIAL_PORT = '/dev/ttyUSB2'
+SERIAL_PORT = '/dev/ttyUSB1'
 BAUD_RATE = 115200
 
 print(f"Testing serial port {SERIAL_PORT}")
