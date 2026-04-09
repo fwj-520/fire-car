@@ -18,7 +18,7 @@ from geometry_msgs.msg import TransformStamped
 import math
 
 # 温度阈值（摄氏度）
-TEMP_FIRE_THRESHOLD = 30.0
+TEMP_FIRE_THRESHOLD = 25.0
 # 着火点标记过期时间（秒）
 FIRE_MARKER_TIMEOUT = 300.0
 
@@ -46,8 +46,8 @@ class TemperatureMarkerNode(Node):
         self.fire_points = []
         self.marker_id_counter = 0
 
-        # 定时器用于更新标记（每秒更新一次）
-        self.timer = self.create_timer(1.0, self.update_markers)
+        # 定时器用于更新标记（提高频率到10Hz）
+        self.timer = self.create_timer(0.1, self.update_markers)
 
     def get_robot_position(self):
         """通过 TF2 获取机器人在 map 坐标系的位置"""

@@ -29,6 +29,14 @@ def generate_launch_description():
             output='screen'
         ),
 
+        # 火源定位节点
+        Node(
+            package='yahboomcar_mapping',
+            executable='fire_source_localization',
+            name='fire_source_localization_node',
+            output='screen'
+        ),
+
         # 激光雷达（如果需要SLAM）
         Node(
             package='ydlidar_ros2_driver',

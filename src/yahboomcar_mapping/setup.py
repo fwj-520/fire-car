@@ -27,6 +27,11 @@ setup(
         'console_scripts': [
             'smooth_teleop = yahboomcar_mapping.smooth_teleop:main',
             'temperature_marker = yahboomcar_mapping.temperature_marker:main',
+            'fire_source_localization = yahboomcar_mapping.fire_source_localization:main',
+            'path_recorder = yahboomcar_mapping.path_recorder:main',
+            'path_optimizer = yahboomcar_mapping.path_optimizer:main',
+            'path_tracker = yahboomcar_mapping.path_tracker:main',
+            'exploration_ender = yahboomcar_mapping.exploration_ender:main',
         ],
     },
 )

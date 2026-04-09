@@ -113,7 +113,7 @@ class SimpleAvoidance(Node):
         left_dist = get_min_distance(left_start, left_end)
         right_dist = get_min_distance(right_start, right_end)
 
-        # 决策逻辑 - 优化避障行为：后退一段距离后原地转弯
+        # 决策逻辑 - 优化避障行为：后退到转弯过程更平滑，添加转弯间隔
         cmd = Twist()
 
         if front_dist < self.danger_distance:  # 危险距离
@@ -121,16 +121,20 @@ class SimpleAvoidance(Node):
                 cmd.linear.x = self.back_speed
                 self.is_turning = True
                 self.back_time = time.time()
+                self.turn_direction = 1 if left_dist > right_dist else -1
                 self.get_logger().info(f'🔥 开始后退 (前:{front_dist:.2f}m)')
             else:
-                # 后退一段时间后，原地转弯
-                if time.time() - self.back_time < 0.8:  # 后退0.8秒
+                # 优化后的避障行为：简化逻辑，确保后退后正确转弯
+                if time.time() - self.back_time < 0.6:  # 后退时间缩短到0.6秒
                     cmd.linear.x = self.back_speed
                     self.get_logger().info(f'🔥 继续后退 (前:{front_dist:.2f}m)')
-                else:  # 原地转弯（双轮配合，更明显的转向）
-                    cmd.angular.z = 0.8 if left_dist > right_dist else -0.8  # 提高角速度，让转弯更明显
-                    cmd.linear.x = 0.05  # 添加小的前进速度，让转向更流畅
-                    self.get_logger().info(f'🔄 原地转弯 (前:{front_dist:.2f}m, 方向:{1 if left_dist>right_dist else -1})')
+                elif time.time() - self.back_time < 2.0:  # 直接原地转弯1.4秒
+                    cmd.linear.x = 0.0
+                    cmd.angular.z = self.turn_speed * self.turn_direction
+                    self.get_logger().info(f'🔄 原地转弯 (方向:{"左" if self.turn_direction == 1 else "右"}, 前:{front_dist:.2f}m)')
+                else:  # 转弯完成
+                    self.is_turning = False
+                    self.get_logger().info(f'✅ 转弯完成，准备重新开始')
 
         else:  # 安全距离，直行
             self.is_turning = False

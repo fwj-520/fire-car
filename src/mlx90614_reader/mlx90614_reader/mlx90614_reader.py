@@ -64,8 +64,8 @@ class Mlx90614ReaderNode(Node):
             self.ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1, write_timeout=1)
             self.get_logger().info(f"成功连接到串口 {SERIAL_PORT}")
 
-            # 创建定时器，降低频率以避免IO错误
-            self.timer = self.create_timer(0.5, self.read_mlx90614_data)
+            # 创建定时器，提高测量频率
+            self.timer = self.create_timer(0.1, self.read_mlx90614_data)
         except Exception as e:
             self.get_logger().error(f"无法打开串口: {e}")
             rclpy.shutdown()

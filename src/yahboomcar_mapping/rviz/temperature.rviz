@@ -63,6 +63,15 @@ Visualization Manager:
     - Class: rviz_default_plugins/TF
       Enabled: true
       Name: TF
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Fire Source Marker
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /fire_source_marker
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48

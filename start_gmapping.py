@@ -9,41 +9,63 @@ import os
 processes = []
 process_groups = []  # 存储进程组ID，用于杀死整个进程树
 
+def send_stop_command_to_stm32():
+    """直接通过串口发送停止命令给 STM32 - 最直接的硬件停止方法"""
+    try:
+        import serial
+        import time
+        print("[STM32] 直接连接到控制板...")
+        ser = serial.Serial('/dev/ttyUSB1', 115200, timeout=0.5)
+
+        # 清空输入缓冲区
+        if ser.in_waiting > 0:
+            ser.read(ser.in_waiting)
+
+        print("[STM32] 发送停止命令...")
+        stop_command = bytearray([0xAA, 0x55, 0x02, 0x04, 0x00, 0x00, 0x00, 0x00, 0x04])
+
+        # 多次发送停止命令，确保 STM32 收到
+        for i in range(20):
+            ser.write(stop_command)
+            time.sleep(0.03)
+
+        ser.close()
+        print("[STM32] 停止命令已发送")
+    except Exception as e:
+        print(f"[Warn] 直接发送停止命令失败: {e}")
+
 def send_stop_command():
-    """发送停止命令给小车 - 先向控制器发送停止指令，然后强制停止电机驱动"""
-    print("[Car] 正在发送停止命令...")
+    """发送停止命令给小车 - 最直接、最强制的方法"""
+    print("[Car] 正在强制停止小车...")
 
-    # 方法1：向控制器发送停止指令
-    try:
-        stop_cmd = "ros2 topic pub -1 /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}' --no-daemon 2>/dev/null"
-        subprocess.run(stop_cmd, shell=True, timeout=0.3)
-        print("[OK] 停止指令已发送到控制器")
-    except Exception as e:
-        print(f"[Warn] 发送停止命令失败: {e}")
+    # 方法1：最直接的硬件停止方法（完全绕过 ROS 系统）
+    send_stop_command_to_stm32()
 
-    # 方法2：等待控制器处理停止指令
+    # 方法2：强制停止电机驱动节点
     try:
-        print("[Car] 等待控制器处理停止指令...")
-        time.sleep(0.5)
-    except Exception as e:
-        print(f"[Warn] 等待停止命令处理失败: {e}")
-
-    # 方法3：强制停止电机驱动节点
-    try:
-        print("[Car] 强制停止电机驱动节点...")
         subprocess.run("pkill -f 'hiwonder_motor_driver' 2>/dev/null", shell=True)
-        time.sleep(0.2)
+        subprocess.run("pkill -9 -f 'hiwonder_motor_driver' 2>/dev/null", shell=True)
         print("[OK] 电机驱动节点已停止")
     except Exception as e:
         print(f"[Warn] 停止电机节点失败: {e}")
 
+    # 方法3：清空最后发送的指令（防止重启后继续执行旧指令）
+    try:
+        # 创建临时的停止命令并发送
+        stop_cmd = "ros2 topic pub -1 /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}' --no-daemon 2>/dev/null"
+        subprocess.run(stop_cmd, shell=True, timeout=0.5)
+    except Exception:
+        pass
+
+    # 短暂延迟确保硬件响应
+    time.sleep(0.5)
     print("[OK] 小车已停止")
 
 def kill_processes():
     """杀死所有子进程及它们的子进程 - 确保彻底清理所有进程"""
     # 先强制停止所有 ROS2 相关进程（使用系统命令）
     try:
-        targets = ['ydlidar_ros2_driver_node', 'slam_gmapping', 'simple_odom', 'simple_avoidance', 'rviz2', 'rf2o_laser_odometry', 'hiwonder_motor_driver', 'temperature_marker']
+        targets = ['ydlidar_ros2_driver_node', 'slam_gmapping', 'simple_odom', 'simple_avoidance', 'rviz2', 'rf2o_laser_odometry', 'hiwonder_motor_driver', 'temperature_marker', 'fire_source_localization', 'path_recorder', 'path_optimizer', 'path_tracker', 'exploration_ender']
         for target in targets:
             for i in range(2):
                 subprocess.run(f"pkill -f '{target}' 2>/dev/null", shell=True)
@@ -89,8 +111,14 @@ def kill_processes():
 
 def signal_handler(sig, frame):
     print("\n[Stop] 正在停止小车...")
-    print("[Stop] 立即停止所有节点...")
+
+    # 1. 优先发送停止命令给小车（确保小车立即停止）
+    send_stop_command()
+
+    # 2. 然后终止所有进程
+    print("[Stop] 正在停止所有节点...")
     kill_processes()
+
     print("[Stop] 所有节点已关闭")
     os._exit(0)
 
@@ -131,6 +159,11 @@ def main():
     subprocess.run("pkill -f 'rviz2' 2>/dev/null", shell=True)
     subprocess.run("pkill -f 'rf2o_laser_odometry' 2>/dev/null", shell=True)
     subprocess.run("pkill -f 'temperature_marker' 2>/dev/null", shell=True)
+    subprocess.run("pkill -f 'fire_source_localization' 2>/dev/null", shell=True)
+    subprocess.run("pkill -f 'path_recorder' 2>/dev/null", shell=True)
+    subprocess.run("pkill -f 'path_optimizer' 2>/dev/null", shell=True)
+    subprocess.run("pkill -f 'path_tracker' 2>/dev/null", shell=True)
+    subprocess.run("pkill -f 'exploration_ender' 2>/dev/null", shell=True)
     time.sleep(0.5)
 
     # 1. 激光雷达
@@ -169,7 +202,27 @@ def main():
     run_command("ros2 run yahboomcar_mapping temperature_marker", "温度标记")
     time.sleep(1)
 
-    # 9. RViz 可视化
+    # 10. 火源定位节点
+    run_command("ros2 run yahboomcar_mapping fire_source_localization", "火源定位")
+    time.sleep(1)
+
+    # 11. 路径记录节点
+    run_command("ros2 run yahboomcar_mapping path_recorder", "路径记录")
+    time.sleep(1)
+
+    # 12. 路径优化节点
+    run_command("ros2 run yahboomcar_mapping path_optimizer", "路径优化")
+    time.sleep(1)
+
+    # 13. 路径跟踪节点
+    run_command("ros2 run yahboomcar_mapping path_tracker", "路径跟踪")
+    time.sleep(1)
+
+    # 14. 探索结束触发节点
+    run_command("ros2 run yahboomcar_mapping exploration_ender", "探索结束触发")
+    time.sleep(1)
+
+    # 15. RViz 可视化
     run_command("ros2 run rviz2 rviz2 -d " + os.path.abspath("src/slam_gmapping/rviz/map_view.rviz"), "RViz", use_setsid=False)
 
     print("\n[OK] 所有节点已启动")
